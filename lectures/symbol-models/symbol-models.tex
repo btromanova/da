@@ -1,0 +1,347 @@
+%\documentclass[11pt,a4paper]{article}
+%\usepackage{fullpage}
+%\usepackage{beamerarticle}
+%\documentclass[handout,xcolor=pdftex,dvipsnames,table]{beamer}
+\documentclass[hyperref={unicode=true}]{beamer}
+
+%\usepackage{pgfpages} 
+%\pgfpagesuselayout{resize}[a4paper,border shrink=5mm,landscape] 
+
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{../clrscode3e} 
+%\usepackage[all]{xy}
+\usepackage{colortbl}
+%\usepackage{xcolor}
+\usepackage{pstricks, pst-tree, pst-node}
+\usepackage{epsfig}
+\usepackage{multicol}
+\usepackage{array}
+\usepackage{wrapfig}
+%\usepackage{listings}
+\usepackage{pifont}
+
+\definecolor{orange}{cmyk}{0,0.52,1,0}
+
+%\usepackage{beamerthemesplit}
+
+\AtBeginSection[]
+{
+  \begin{frame}<beamer>{Раздел}
+    \tableofcontents[currentsection]
+  \end{frame}
+}
+
+
+\AtBeginSubsection[]
+{
+  \begin{frame}<beamer>{Раздел}
+    \tableofcontents[currentsection,currentsubsection]
+  \end{frame}
+}
+
+
+\newtheorem{rtheorem}{Теорема} 
+\newtheorem{rdefinition}{Определение} 
+\newtheorem{rconsequence}{Следствие} 
+%default}
+%themesplit}
+
+\title{Символьные модели сжатия}
+\subtitle{Дискретный анализ 2012/13}
+\author{Андрей Калинин, Татьяна Романова}
+\date{11 мая 2013\,г.}
+\usetheme{default}
+%\usefonttheme{serif}
+\usefonttheme[onlymath]{serif}
+%\usefonttheme{professionalfonts}
+%\usetheme{default} 
+
+
+\begin{document}
+
+\frame{\titlepage}
+
+\frame
+{
+  \frametitle{Литература}
+
+
+  \begin{itemize}
+  \item Witten, Moffat, Bell, Managing gigabytes: compressing and
+    indexing documents and images.
+  \item Ватолин Д., Ратушняк А., Смирнов М., Юкин В., Методы сжатия
+    данных. Устройство архиваторов, сжатие изображений и видео. 
+  \end{itemize}
+}
+
+%\section[Содержание]{}
+%\frame{\tableofcontents}
+
+%\section{Введение в теорию информации}
+
+
+%\section{Компрессия текстов}
+
+\section{Предсказание по частичному совпадению (PPM)}
+\frame[plain]{
+%  \frametitle{Пример}
+  \begin{quote}
+    "I never heerd a skilful old married feller of twenty years'
+    standing pipe ``my wife'' in a more used note than 'a did," said
+    Jacob Smallbury. "It might have been a little more true to nater
+    if't had been spoke a little chillie
+  \end{quote}
+  \begin{itemize}
+    \item Следующий символ r.
+    \item Проверяется 5-и символьный контекст $illie$ --- никогда не встречался в
+      тексте, модель переходит к 4-х символьному контексту. 
+    \item Контекст $llie$ встречался один раз, за ним следовал
+      $s$. Посылается ESC и модель переходит к 3-х символьному
+      контексту (допустим, ESC это код с частотой 1). 
+    \item $lie$ встречался 201 раз и 19 раз за ним следовал символ
+      $r$, поэтому $r$ может быть упакован с вероятностью 19/202,
+      т.е. 3.4 битами (1 --- для ESC). 
+    \item При достижении 0-го порядка символ кодируется
+      равновероятно. 
+    \item PPMn --- начинается с модели порядка $n$, PPM* --- модель
+      бесконечного порядка. 
+  \end{itemize}
+}
+
+\frame{
+  \frametitle{Исключения}
+  \begin{itemize}
+    \item При расчёте вероятности следования $r$ за $lie$ не
+      учитывался тот факт, что 22 раза из 201 за $lie$ следовала буква
+      $s$, обрабатываемая моделью старшего порядка. 
+    \item Можно вычесть 22 из 201 и улучшить оценку для $r$: 19/180
+      против 19/202.
+  \end{itemize}
+}
+
+\frame{
+  \frametitle{Оценка ESC}
+  $n$ --- количество символов в текущем контексте, $r$ --- количество
+  разных символов, $c_i$ --- количество $i$-х символов, $t_1$ ---
+  количество символов с $c_i=1$. 
+  \begin{itemize}
+  \item PPMA: $P(esc)=1/(n+1)$; $P(i)=c_i/(n+1)$. 
+  \item PPMC: $P(esc)=r/(n+r)$; $P(i)=c_i/(n+r)$.
+  \item PPMD: $P(esc)=r/(2n)$; $P(i)=(2c_i-1)/(2n)$.
+  \item PPMX: $P(esc)=t_1/(n+t_1)$; $P(i) = c_i/(n+t_1)$. Если
+    $t_1=0$,  то $P(esc)=(t_1+1)/(n+t_1+1)$ и $P(i)=c_i/(n+t_1+1)$.
+  \end{itemize}
+}
+
+\section{Блочное сжатие}
+
+\subsection{Преобразование Барроуза-Уилера (BWT)}
+
+\frame{
+  \frametitle{Идея преобразования}
+  \begin{itemize}
+  \item Построить для строки все её циклические перестановки. 
+  \item Остортировать в лексикографическом порядке реверсов
+    перестановок.
+  \item Каждый столбец полученной в результате матрицы символов ---
+    перестановка символов исходной строки. 
+  \item Первый столбец и есть BWT. 
+  \item Можно получить из суффиксного массива $A$, построенного для
+    реверса $S'$ исходной строки: $S'[A[i]-1]$. 
+  \item Символы с похожими контекстами в BWT окажутся рядом.
+  \end{itemize}
+}
+
+\frame{
+\frametitle{Пример прямого преобразования}
+\begin{tabular}{lcll}
+\texttt{mississippi\$} & &\texttt{m}& \texttt{ississippi\$} \\
+\texttt{ississippi\$m} & &\texttt{s}& \texttt{sissippi\$mi} \\
+\texttt{ssissippi\$mi} & &\texttt{\$}& \texttt{mississippi} \\
+\texttt{sissippi\$mis} & &\texttt{s}& \texttt{sippi\$missi} \\
+\texttt{issippi\$miss} & &\texttt{p}& \texttt{pi\$mississi} \\
+\texttt{ssippi\$missi} &$\Longrightarrow$ &\texttt{i}&\texttt{ssissippi\$m} \\
+\texttt{sippi\$missis} & &\texttt{p}& \texttt{i\$mississip} \\
+\texttt{ippi\$mississ} & &\texttt{i}& \texttt{\$mississipp} \\
+\texttt{ppi\$mississi} & &\texttt{s}& \texttt{issippi\$mis} \\
+\texttt{pi\$mississip} & &\texttt{s}& \texttt{ippi\$missis} \\
+\texttt{i\$mississipp} & &\texttt{i}& \texttt{ssippi\$miss} \\
+\texttt{\$mississippi} & &\texttt{i}& \texttt{ppi\$mississ} 
+\end{tabular}
+}
+
+\frame{
+  \frametitle{Восстановление строки}
+\begin{tabular}{>{\onslide<1->}r|>{\onslide<1->\tt}l>{\onslide<2->\tt}l>{\onslide<3->\tt}l>{\onslide<4->\tt}l>{\onslide<5->\tt}l>{\onslide<6->\tt}l>{\onslide<7->\tt}l>{\onslide<8->\tt}l>{\onslide<9->\tt}l>{\onslide<10->\tt}l}
+%o&srt& +o& srt&+o & srt & +o\\
+%\hline
+1& m &\$&\$m&i\$&i\$m&pi\$&pi\$m&ppi\$&ppi\$m&ippi\$\\
+2& s &i &is &mi &mis &\$mi&\$mis&i\$mi&i\$mis&pi\$mi\\
+3& \$&i &i\$&pi &pi\$&ppi &ppi\$&ippi &ippi\$&sippi\\
+4& s &i &is &si &sis &ssi &ssis &issi &issis &missi\\
+5& p &i &ip &si &sip &ssi &ssip &issi &issip &sissi\\
+6& i &m &mi &\$m&\$mi&i\$m&i\$mi&pi\$m&pi\$mi&ppi\$m\\
+7& p &p &pp &ip &ipp &sip &sipp &ssip &ssipp &issip\\
+8& i &p &pi &pp &ppi &ipp &ippi &sipp &sippi &ssipp\\
+9& s &s &ss &is &iss &mis &miss &\$mis&\$miss&i\$mis\\
+10&s &s &ss &is &iss &sis &siss &ssis &ssiss &issis\\
+11&i &s &si &ss &ssi &iss &issi &miss &missi &\$miss\\
+12&i &s &si &ss &ssi &iss &issi &siss &sissi &ssiss
+\end{tabular}
+}
+
+\frame{
+  \frametitle{Восстановление строки в один проход}
+  \begin{columns}
+    \begin{column}{.5\textwidth}
+\begin{tabular}{r|>{\tt}r>{\tt}l}
+1& &\alert<1>{\$m}\\
+2& \onslide<3,6,9,12>{m}&\alert<3>{i\alert<4>{s}} \\
+3& \onslide<3,6,9,12>{p}&\alert<12>{i\$}\\
+4& \onslide<3,6,9,12>{s}&\alert<6>{i\alert<7>{s}} \\
+5& \onslide<3,6,9,12>{s}&\alert<9>{i\alert<10>{p}} \\
+6& &\alert<2>{m\alert<3>{i}} \\
+7&\onslide<10,11>{i} &\alert<10>{p\alert<11>{p}} \\
+8&\onslide<10,11>{p}&\alert<11>{p\alert<3,12>{i}} \\
+9&\onslide<4,5,7,8>{i} &\alert<4>{s\alert<5>{s}} \\
+10&\onslide<4,5,7,8>{i}&\alert<7>{s\alert<8>{s}} \\
+11&\onslide<4,5,7,8>{s}&\alert<5>{s\alert<3,6>{i}} \\
+12&\onslide<4,5,7,8>{s}&\alert<8>{s\alert<3,9>{i}} 
+\end{tabular}
+\end{column}
+\begin{column}{.5\textwidth}
+\texttt{\onslide<1->{\alert<1>{m}}\onslide<2->{\alert<2>{i}}\onslide<3->{\alert<3>{s}}\onslide<4->{\alert<4>{s}}%
+\onslide<5->{\alert<5>{i}}\onslide<6->{\alert<6>{s}}\onslide<7->{\alert<7>{s}}\onslide<8->{\alert<8>{i}}%
+\onslide<9->{\alert<9>{p}}\onslide<10->{\alert<10>{p}}\onslide<11->{\alert<11>{i}}\onslide<12->{\alert<12>{\$}}%
+}
+\end{column}
+\end{columns}
+}
+
+\frame{
+  \frametitle{Алгоритм восстановления строки}
+  \begin{codebox}
+    \li $P[1..N]$ содержит преобразованную строку. 
+    \li $p \gets $ номер первого символа в P. 
+    \li $K[s] \gets$  количество вхождений символа $s$ в $P$.
+    \li $M[\min\{\Sigma\}] \gets 1$.
+    \li \For $s \in \Sigma-\min\{\Sigma\}$  \Do 
+    \li $M[s] \gets M[s-1] + K[s-1]$ \End
+    \li \For $i \gets 1$ \To $N$ \Do
+    \li $s \gets P[i]$, $L[i] \gets M[s]$, $M[s] \gets M[s]+1$ \End
+    \zi \Comment Теперь в массиве $L$ содержатся связи, позволяющие
+    обойти $P$.
+    \li $i \gets p$
+    \li \For $k \gets 1$ \To $N$ \Do
+    \li Вывести $P[i]$
+    \li $i \gets L[i]$ \End
+  \end{codebox}
+}
+
+\frame{
+  \frametitle{Работа алгоритма}
+  \begin{tabular}{r|rrrrrrrrrrrr}
+     & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & 11 & 12 \\
+     \hline 
+    $P$ 
+    & \tt \alert<14>m
+    &\tt \alert<16>s
+    &\tt \alert<25>\$
+    & \tt \alert<19>s
+    &\tt \alert<22>p
+    &\tt \alert<15>i
+    &\tt \alert<23>p
+    &\tt \alert<24>i
+    &\tt \alert<17>s
+    &\tt \alert<20>s
+    &\tt \alert<18>i
+    &\tt \alert<21>i \\
+    $L$ & \onslide<2->{\alert<2>{6}}
+    & \onslide<3->{\alert<3>{9}}
+    & \onslide<4->{\alert<4>{1}}
+    & \onslide<5->{\alert<5>{10}}
+    & \onslide<6->{\alert<6>{7}}
+    & \onslide<7->{\alert<7>{2}}
+    & \onslide<8->{\alert<8>{8}}
+    & \onslide<9->{\alert<9>{3}}
+    & \onslide<10->{\alert<10>{11}}
+    & \onslide<11->{\alert<11>{12}}
+    & \onslide<12->{\alert<12>{4}}
+    & \onslide<13->{\alert<13>{5}}
+  \end{tabular}\\
+~\\
+~\\
+~\\
+  \begin{columns}
+    \begin{column}{.25\textwidth}
+  \begin{tabular}{>{\tt}rrr}
+      & $K$ & $M$ \\
+      \hline 
+    \$ & 1 & \alt<1-3>{1}{\alert<4>2} \\
+    i & 4 & \alt<1-6>{2}{\alt<1-8>{\alert<7>{3}}{\alt<1-11>{\alert<9>4}{\alt<1-12>{\alert<12>{5}}{\alert<13>6}}}} \\
+    m & 1 & \alt<1>{6}{\alert<2>7} \\
+    p & 2 & \alt<1-5>{7}{\alt<1-7>{\alert<6>{8}}{\alert<8>9}} \\
+    s & 4 & \alt<1,2>{9}{\alt<1-4>{\alert<3>{10}}{\alt<1-9>{\alert<5>{11}}{\alt<1-10>{\alert<10>{12}}{\alert<11>{13}}}}}
+  \end{tabular} 
+  \end{column}
+\begin{column}{.75\textwidth}
+  \texttt{\uncover<14->m\uncover<15->i\uncover<16->s\uncover<17->s\uncover<18->i\uncover<19->s\uncover<20->s\uncover<21->i\uncover<22->p\uncover<23->p\uncover<24->i\uncover<25->\$}
+\end{column}
+\end{columns}
+}
+
+\subsection{Использование BWT}
+
+\newcommand{\cret}{\Pisymbol{psy}{191}}
+\frame[plain]{
+\begin{tabular}{rc}
+\texttt{nly thrown into greater relie} & \texttt{f} \\
+\texttt{n. Nevertheless, he\cret{}was relie} & \texttt{v} \\
+\texttt{eba, feeling a nameless relie} & \texttt{f} \\
+\texttt{rise, experienced great relie} & \texttt{f} \\
+\texttt{thsheba was momentarily relie} & \texttt{v} \\
+\texttt{P 398>\cret{}foreheads, quite\cret{}relie} & \texttt{v}\\
+\texttt{t such times is a great\cret{}relie} & \texttt{f} \\
+\texttt{e droning of\cret{}blue-bottle flie} & \texttt{s} \\
+\texttt{and the reasonable probabilie} & \texttt{s} \\
+\texttt{~her head and feet,\cret{}the lilie} & \texttt{s} \\
+\texttt{eads, all\cret{}about their familie} & \texttt{s} \\
+\texttt{d been spoke a little\cret{}chillie} & \texttt{r} \\
+\texttt{no absurd sides to the follie} & \texttt{s} \\
+\texttt{lways be your\cret{}friend,' replie} & \texttt{d} \\
+\texttt{s I've got no chance,' replie} & \texttt{d} \\
+\texttt{\cret{}'O no -\,- not at all,' replie} & \texttt{d} \\
+\texttt{~'tis my only doctor,' replie} & \texttt{d}
+\end{tabular}
+}
+
+\frame{
+  \frametitle{Идея блочного сжатия}
+  \begin{itemize}
+    \item Текст разбивается на блоки. 
+    \item Для каждого блока считается BWT. 
+    \item Для текста одинаковые символы будут объединяться в кластеры,
+      например, в предыдущем
+      примере часть блока будет содержать в себе
+      $fvffvvfssssssrsdddd$.
+    \item BWT можно закодировать, например, при помощи move-to-front
+      кодировщика (MTF) или комбинацией RLE с кодами Хаффмана.
+    \item Качество сжатия близко к PPM*.
+  \end{itemize}
+}
+
+\frame{
+  \frametitle{Move-To-Front}
+  \begin{itemize}
+  \item Ведётся список последних закодированных символов (Last
+    Recently Used List).
+  \item Следующий символ из потока кодируется с вероятностью,
+    соответствующей его позиции в LRU. После кодирования этот символ
+    поднимается наверх. 
+  \item Вероятности могут назначаються статически (коды Хаффмана),
+    могут оцениваться по ходу работы алгоритма (арифметические коды). 
+  \end{itemize}
+}
+
+\end{document}

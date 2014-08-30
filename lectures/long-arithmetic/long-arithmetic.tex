@@ -1,0 +1,422 @@
+%\documentclass[11pt,a4paper]{article}
+%\usepackage{fullpage}
+%\usepackage{beamerarticle}
+%\documentclass[handout,xcolor=pdftex,dvipsnames,table]{beamer}
+\documentclass[hyperref={unicode=true}]{beamer}
+
+%
+%
+% Нужно ещё:
+%  - возведение в степень. 
+%  - формальности в начале. 
+%  - пояснить соответствие примера на деление с фактом v_n<b/2 при q>=q^q+3
+%  - классических алгоритмов с формальностями хватает на одну лекцию. 
+%
+
+%\usepackage{pgfpages} 
+%\pgfpagesuselayout{resize}[a4paper,border shrink=5mm,landscape] 
+
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{../clrscode3e} 
+%\usepackage[all]{xy}
+\usepackage{colortbl}
+%\usepackage{xcolor}
+\usepackage{pstricks, pst-tree, pst-node}
+\usepackage{epsfig}
+\usepackage{multicol}
+\usepackage{array}
+%\usepackage{listings}
+
+\definecolor{orange}{cmyk}{0,0.52,1,0}
+
+% \usepackage{beamerthemesplit}
+
+\AtBeginSubsection[]
+{
+  \begin{frame}<beamer>{Раздел}
+    \tableofcontents[currentsection,currentsubsection]
+  \end{frame}
+}
+
+
+\newtheorem{rtheorem}{Теорема} 
+\newtheorem{rconsequence}{Следствие} 
+%default}
+%themesplit}
+
+\title{Длинная арифметика}
+\subtitle{Дискретный анализ 2012/13}
+\author{Андрей Калинин, Татьяна Романова}
+\date{16 февраля 2013\,г.}
+\usetheme{default}
+%\usefonttheme{serif}
+\usefonttheme[onlymath]{serif}
+%\usefonttheme{professionalfonts}
+%\usetheme{default} 
+
+
+\begin{document}
+
+\frame{\titlepage}
+
+%\section[Содержание]{}
+\frame{\tableofcontents}
+
+%\section{Литература}
+\frame
+{
+  \frametitle{Литература}
+
+
+  \begin{itemize}
+  \item Дональд Кнут, <<Искусство программирования>>, том 2,
+    <<Получисленные алгоритмы>>, 3-е издание. Глава 4{.}3,
+    <<Арифметика многкратной точности>>, стр. 304--335. 
+  \end{itemize}
+}
+
+\section{Классические алгоритмы}
+
+\frame{
+\frametitle{База}
+\begin{itemize}
+  \item Целые числа представляются в системе счисления по основанию $b$, не
+    превышающему машинное слово. 
+  \item В наличии: 
+    \begin{enumerate}
+      \item Сложение и вычитание одноразрядных целых чисел с
+        получением одноразрядного результата и разряда переноса. 
+      \item Перемножение двух одноразрядных чисел с получением
+        двухразрядного результата. 
+      \item Деление двухразрядного целого числа на одноразрядное,
+        дающее одноразрядное частное и одноразрядный остаток. 
+    \end{enumerate}
+  \item Считаем числа неотрицательными. 
+\end{itemize}
+}
+
+\subsection{Сложение}
+\frame{
+  \frametitle{Задача}
+  Дано:
+  \begin{itemize}
+    \item  $u = (u_{n-1}\ldots u_1u_0)_b$
+    \item  $v = (v_{n-1}\ldots v_1v_0)_b$
+  \end{itemize}
+  Нужно найти число 
+\[ 
+w = u+v 
+\] в представлении 
+\[
+w = (w_nw_{n-1}\ldots w_1w_0)_b.
+\] 
+Здесь $w_n$ --- разряд переноса,
+  равный 0 или 1. 
+}
+
+\frame{
+\frametitle{Алгоритм сложения}
+\begin{codebox}
+\li $k \gets 0$
+\li \For $j \gets 0$ \To $n-1$ \Do 
+\li $w_j \gets (u_j+v_j+k)\mod b$
+\li $k \gets \lfloor (u_j+v_j+k)/b \rfloor$ \End
+\li $w_n \gets k$
+\end{codebox}
+}
+
+\subsection{Вычитание}
+
+\frame{
+  \frametitle{Задача}
+  Дано:
+  \begin{itemize}
+    \item  $u = (u_{n-1}\ldots u_1u_0)_b$
+    \item  $v = (v_{n-1}\ldots v_1v_0)_b$
+    \item $u \geq v$
+  \end{itemize}
+  Нужно найти число 
+\[ 
+w = u-v 
+\] в представлении 
+\[
+w = (w_{n-1}\ldots w_1w_0)_b.
+\] 
+}
+
+\frame{
+\frametitle{Алгоритм вычитания}
+\begin{codebox}
+\li $k \gets 0$
+\li \For $j \gets 0$ \To $n-1$ \Do 
+\li $w_j \gets (u_j-v_j+k)\mod b$
+\li $k \gets \lfloor (u_j-v_j+k)/b \rfloor$ \End
+\end{codebox}
+В конце алгоритма $k = 0$, по начальному предположению $u \geq v$.
+}
+
+
+\subsection{Умножение}
+\frame{
+  \frametitle{Задача}
+  Дано:
+  \begin{itemize}
+    \item  $u = (u_{m-1}\ldots u_1u_0)_b$
+    \item  $v = (v_{n-1}\ldots v_1v_0)_b$
+  \end{itemize}
+  Нужно найти число 
+\[ 
+w = u \times v 
+\] в представлении 
+\[
+w = (w_{m+n-1}\ldots w_1w_0)_b.
+\] 
+}
+
+\frame{
+\frametitle{Алгоритм умножения}
+\begin{codebox}
+\li $(w_{m-1}, w_{m-2}, \ldots , w_0) \gets (0, 0, \ldots, 0)$
+\li \For $j \gets 0$ \To $n-1$ \Do
+\li \If $v_j \neq 0$ \Then
+\li $k \gets 0$
+\li \For $i \gets 0$ \To $m-1$ \Do
+\li $t \gets u_i \times v_j + w_{i+j} + k$
+\li $w_{i+j} \gets t \mod b$
+\li $k \gets \lfloor t/b \rfloor$ \End
+\li $w_{j+m} \gets k$  \End \End
+\end{codebox}
+
+Алгоритм работает за $O(nm)$, есть значительно более быстрые
+алгоритмы. 
+}
+
+\subsection{Деление}
+
+\frame{
+  \frametitle{Пример деления столбиком}
+
+\begin{columns}
+\begin{column}{.5\textwidth}
+\begin{tabular}{ll}
+\texttt{1260257} & \multicolumn{1}{|l}{\texttt{37}} \\
+\cline{2-2}
+\only<2->{\texttt{111}} & \multicolumn{1}{|l}{\texttt{\only<2->3\only<4->4\only<5->0\only<7->6\only<9->1}} \\
+\texttt{\only<2->{~15}\only<3->0}\\
+\only<4->{\texttt{~148}}\\
+\texttt{~~~\only<4->2\only<5->2\only<6->5}\\
+\texttt{~~~\only<7->{222}}\\
+\texttt{~~~~~\only<7->3\only<8->7}\\
+\texttt{~~~~~\only<9->{37}}\\
+\texttt{~~~~~~\only<9->0}\\
+\end{tabular}
+\end{column}
+\begin{column}{.5\textwidth}
+\only<10->{Самое сложноформализуемое  в этом алгоритме --- определение следующего
+  разряда частного.}
+\end{column}
+\end{columns}
+}
+
+\frame{
+  \frametitle{Задача получения следующего разряда}
+  Дано:
+  \begin{itemize}
+    \item  $u = (u_{n}u_{n-1}\ldots u_1u_0)_b$
+    \item  $v = (v_{n-1}\ldots v_1v_0)_b$
+    \item $u/v < b$ (или $(u_n u_{n-1}\ldots u_0)_b <
+      (v_{n-1}v_{n-2}\ldots v_0)_b$)
+  \end{itemize}
+  Нужно найти число 
+\[ 
+q = \lfloor u/v \rfloor 
+\] 
+}
+
+\frame{
+  \frametitle{Угадывание $q$}
+  Положим 
+\[
+\hat{q} = \min \left( \left\lfloor \frac{u_n b + u_{n-1}}{v_{n-1}}\right\rfloor ,
+  b-1 \right)
+\]
+\pause
+Как это ни странно, такое приближение даёт хорошие результаты. Покажем
+это. 
+}
+\frame{
+\begin{rtheorem}
+$\hat{q}=\min \left( \left\lfloor \displaystyle\frac{u_n b + u_{n-1}}{v_{n-1}}\right\rfloor ,
+  b-1 \right)\geq q$
+\end{rtheorem}
+  \begin{proof}
+    $\hat{q} = b-1\quad\Rightarrow\quad \hat{q} \geq
+    q$. 
+\pause
+
+$\hat{q} = \lfloor (u_n b + u_{n-1})/v_{n-1}\rfloor \quad \Rightarrow
+\quad \hat{q}v_{n-1} \geq u_nb + u_{n-1}-v_{n-1}+1$.
+\pause
+
+\begin{align*}
+u - \hat{q}v &\leq u - \hat{q}v_{n-1}b^{n-1} \\
+&\leq u_nb^n + \cdots + u_0 - (u_n b^n +
+u_{n-1}b^{n-1}-v_{n-1}b^{n-1}+b^{n-1}) \\
+&= u_{n-2}b^{n-2} + \cdots + u_0 - b^{n-1}+v_{n-1}b^{n-1} \\
+& < v_{n-1}b^{n-1}\leq v
+\end{align*}
+\pause
+$u  - \hat{q}v < v \quad \Rightarrow \quad \hat{q}\geq q$ (т.к. $0\leq
+u-qv<v$).
+  \end{proof}
+}
+
+\frame[plain]{
+  \frametitle{Насколько $\hat{q}$ больше $q$?}
+  Преположим, что $\hat{q}\geq q+3$. Тогда:
+\[
+\hat{q} \leq \frac{u_nb+u_{n-1}}{v_{n-1}} =
+\frac{u_nb^n+u_{n-1}b^{n-1}}{v_{n-1}b^{n-1}} \leq \frac
+{u}{v_{n-1}b^{n-1}} < \frac{u}{v-b^{n-1}}
+\]
+\pause
+Т.к. $q >(u/v)-1$, то:
+\[
+3 \leq \hat{q}-q < \frac{u}{v-b^{n-1}}-\frac{u}{v}+1 = \frac{u}{v}\left(\frac{b^{n-1}}{v-b^{n-1}}\right)+1
+\]
+\pause
+Следовательно:
+\[
+\frac{u}{v}> 2\left(\frac{v-b^{n-1}}{b^{n-1}}\right) \geq 2(v_{n-1}-1)
+\]
+\pause
+Поскльку $b-4\geq \hat{q}-3\geq q = \lfloor u/v \rfloor \geq
+2(v_{n-1}-1)$, то $v_{n-1}<\lfloor b/2 \rfloor$.
+}
+
+\frame{
+  \begin{rtheorem}
+    Если $v_{n-1} \geq \lfloor b/2 \rfloor$, то $\hat{q}-2\leq q \leq
+    \hat{q}$. 
+  \end{rtheorem}
+\pause
+  Следствия: 
+  \begin{enumerate}
+    \item Условие теоремы не зависит от того, насколько велико $b$: подобранное
+      частное $\hat{q}$ не отличается от истинного более чем на 2. 
+\pause
+    \item Любые входные данные можно преобразовать таким образом,
+      чтобы выполнялось условие теоремы. Например, можно домножить $u$
+      и $v$ на $\lfloor b/(v_{n-1}+1)\rfloor$. Это не изменит значения
+      $u/v$ и не увеличит количество разрядов в $v$, при этом новое
+      $v_{n-1}$ станет достаточно велико. 
+  \end{enumerate}
+}
+
+\frame{
+  \frametitle{Дополнительные условия}
+  $\hat{r} = u_nb +u_{n-1}-\hat{q}v_{n-1}$. Предположим, что
+    $v_{n-1}>0$.
+  \begin{enumerate}
+  \item Если $\hat{q}v_{n-2}>b\hat{r}+u_{n-2}$, то
+    $q<\hat{q}$.
+  \item Если $\hat{q}v_{n-2}\leq b\hat{r}+u_{n-2}$, то  $\hat{q}=q$
+    или $q=\hat{q}-1$.
+  \item Если $v_{n-1}\geq \lfloor b/2 \rfloor$ и $\hat{q}v_{n-2} \leq
+    b\hat{r}+u_{n-2}$, но $\hat{q}\neq q$, то $u \mod v \geq
+    (1-2/b)v$, т.е. это событие происходит с вероятностью приблизительно
+    равной $2/b$.
+  \end{enumerate}
+}
+
+\frame{
+  \frametitle{Задача длинного деления}
+  Дано:
+  \begin{itemize}
+    \item  $u = (u_{n+m-1}u_{n-1}\ldots u_1u_0)_b$
+    \item  $v = (v_{n-1}\ldots v_1v_0)_b$
+    \item $v_{n-1} \neq 0$, $n>1$.
+  \end{itemize}
+  Нужно найти числа $q$ и $r$, такие, что:
+\[
+u = v\times q + r,\quad 0 \leq r < v
+\]
+в представлении 
+\[ 
+q = (q_mq_{m-1}\ldots q_0)_b, \quad r = (r_{n-1}\ldots r_1 r_0)_b
+\] 
+}
+
+\frame[plain]{
+  \frametitle{Алгоритм длинного деления}
+  \begin{codebox}
+    \li $d \gets \lfloor b/(v_{n-1}+1)\rfloor$, $u \gets u \times d$,
+    $v \gets v \times d$. 
+    \zi \Comment В $u$ может появиться дополнительный разряд (до $n+m$).
+    \li \For $j \gets m$ \Downto $0$ \Do
+    \li $\hat{q} \gets \lfloor (u_{j+n}b + u_{j+n-1})/v_{n-1}\rfloor$
+    \li $\hat{r} \gets (u_{j+n}b + u_{j+n-1}) \mod v_{n-1}$
+    \li \While $\hat{r}<b \quad \func{and} \quad (\hat{q} \isequal b
+    \quad \func{or} \quad \hat{q}v_{n-2} > b\hat{r}+u_{j+n-2}$) \Do
+    \li $\hat{q} \gets \hat{q}-1$, $\hat{r} \gets \hat{r}+v_{n-1}$
+    \End
+    \li $(u_{j+n}\ldots u_j)_b \gets (u_{j+n}\ldots u_j)_b -
+    \hat{q}(v_{n-1}\ldots v_0)_b$
+    \li $q_j \gets q$
+    \li \If $(u_{j+n}\ldots u_j)_b < 0$ \Then 
+    \li $q_j \gets q_j -1$
+    \li $(u_{j+n}\ldots u_j)_b \gets (u_{j+n}\ldots u_j)_b+(0
+    v_{n-1}\ldots v_0)_b$
+    \zi \Comment Перенос в разряд $u_{j+n-1}$ игнорируется.
+    \End
+    \End
+    \li $r \gets (u_{n-1}\ldots u_0)_b/d$
+  \end{codebox}
+}
+
+\section{Быстрое умножение}
+
+\subsection{Алгоритм Карацубы}
+
+\frame{
+  \frametitle{Можно ли быстрее, чем за $n^2$?}
+  
+  Допустим, есть 
+  \[u = (u_{2n-1}\ldots u_1u_0)_2=(U_1,U_0)_{2^n}, \quad v=(v_{2n-1}\ldots v_1
+  v_0)_2=(V_1,V_0)_{2^n}\]
+  Можно переписать:
+  \[
+  u = 2^nU_1 + U_0, \quad v = 2^nV_1+V_0
+  \]
+  Тогда
+  \[
+  uv = (2^{2n}+2^n)U_1V_1 + 2^n(U_1-U_0)(V_0-V_1)+(2^n+1)U_0V_0.
+  \]
+\pause
+  Т.е., операция умножения $2n$-битных чисел свелась к 3 операциям
+  умножения $n$-битных чисел и нескольких операций сдвига и сложения.
+
+}
+
+\frame{
+  \frametitle{Быстрое умножение}
+  Этот подход можно использовать для рекурсивного процесса
+  умножения. Допустим, $T(n)$ --- время, затрачиваемое на выполнение
+  умножения $n$-битных чисел. Тогда:
+  \begin{align*}
+  T(2n) &\leq 3T(n)+cn \\
+  T(2^k)&\leq c(3^k-2^k), \qquad k \geq 1
+  \end{align*}
+
+  То есть:
+\[
+T(n) \leq T(2^{\lceil \lg n \rceil}) \leq c(3^{\lceil \lg n \rceil} -
+2^{\lceil \lg n \rceil}) < 3c \cdot 3^{\lg n} = 3cn^{\lg 3}
+\]
+\pause
+Можно сократить операцию умножения до $n^{1{.}585}$
+}
+
+\end{document}
+    
